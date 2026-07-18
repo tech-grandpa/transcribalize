@@ -16,6 +16,7 @@ concurrency:
 jobs:
   deploy:
     if: >-
+      vars.DEPLOY_RUNNER_LABELS != '' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push'
     # Configure DEPLOY_RUNNER_LABELS as a JSON repository variable, for example:
