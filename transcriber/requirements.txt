@@ -13,7 +13,7 @@ websockets>=16.0
 aiofiles>=25.1.0
 
 # Audio processing for live transcription
-numpy>=2.4.4
+numpy>=2.5.1
 
 # VAD for smart chunking (Silero VAD)
 torch>=2.11.0,<3.0.0
