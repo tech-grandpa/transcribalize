@@ -1,35 +1,12 @@
-# Transcriber Service Deployment
+# Deploying Transcribalize
 
-This repo contains the GPU transcription service in `transcriber/`.
+Transcribalize runs as one GPU-backed FastAPI service from `transcriber/`. The
+supported container deployment uses Docker Compose, NVIDIA Container Toolkit,
+and a persistent volume for downloaded models.
 
-## What changed recently
-
-- LLM model list updated to current OpenRouter model IDs:
-  - `anthropic/claude-opus-4.8`
-  - `anthropic/claude-opus-4.8-fast`
-  - `google/gemini-3.5-flash`
-  - `google/gemini-3.1-pro-preview`
-  - `google/gemini-3.1-flash-lite`
-  - `qwen/qwen3.7-max`
-  - `minimax/minimax-m3`
-  - `moonshotai/kimi-k2.6`
-  - `openai/gpt-5.5-pro`
-  - `openai/gpt-5.5`
-- Old model entries removed:
-  - `anthropic/claude-opus-4.7`
-  - `anthropic/claude-opus-4.6`
-  - `google/gemini-3-pro-preview`
-  - `google/gemini-3-flash-preview`
-  - `google/gemini-2.5-flash`
-  - `openai/gpt-5.4`
-  - `openai/gpt-5.2`
-  - `moonshotai/kimi-k2-thinking`
-- Upload UX improved:
-  - file size is shown before upload
-  - direct upload progress is shown
-  - processing and transcription are shown as separate stages
-  - large files use chunked upload to avoid the Cloudflare 100 MB request cap
-- Direct uploads are intentionally capped below the Cloudflare limit
+Start with the root [README](../README.md) for hardware requirements and local
+setup. This guide covers deployment configuration, updates, rollback, and
+operational checks.
 
 
 ## Private deployment configuration
@@ -47,9 +24,11 @@ through a DNS hostname at the reverse proxy.
 
 ### GitHub Actions deployment
 
-The deployment workflow runs only after the `CI` workflow succeeds for a push
-to `main`. It deploys that exact verified commit on an isolated self-hosted
-runner; pull-request code never runs on the deployment runner.
+The deployment job is opt-in and skips unless `DEPLOY_RUNNER_LABELS` is set.
+When the workflow is enabled and configured, it runs only after the `CI`
+workflow succeeds for a push to `main`. It deploys that exact verified commit
+on an isolated self-hosted runner; pull-request code never runs on the
+deployment runner.
 
 Configure:
 
@@ -92,6 +71,7 @@ Use `scripts/deploy.env.example` as a template, but keep the real env file outsi
 From the repo root:
 
 ```bash
+# Optional: needed for LLM analysis or non-default ASR settings.
 cp .env.example .env
 cd transcriber
 docker compose up --build
@@ -161,22 +141,9 @@ curl -fsS http://localhost:8000/health
 curl -fsS http://localhost:8000/models
 ```
 
-Confirm the response includes:
-
-- `anthropic/claude-opus-4.8`
-- `google/gemini-3.5-flash`
-- `qwen/qwen3.7-max`
-- `minimax/minimax-m3`
-- `moonshotai/kimi-k2.6`
-- `openai/gpt-5.5`
-
-and no longer includes:
-
-- `anthropic/claude-opus-4.7`
-- `anthropic/claude-opus-4.6`
-- `openai/gpt-5.4`
-- `openai/gpt-5.2`
-- `moonshotai/kimi-k2-thinking`
+Confirm that the configured `DEFAULT_MODEL` appears in the response. The
+runtime allowlist is defined in `transcriber/app/llm.py`; clients should discover
+it through this endpoint rather than relying on a copied model list.
 
 ### Upload config
 
@@ -184,11 +151,9 @@ and no longer includes:
 curl -fsS http://localhost:8000/upload/config
 ```
 
-This should expose:
-
-- Cloudflare cap: `100 MB`
-- safe direct upload cap
-- chunk upload size
+The default response exposes a 100 MiB proxy cap, a 95 MiB direct-upload cap,
+and an 8 MiB chunk size. Confirm that these match the reverse proxy and storage
+limits for the deployment.
 
 ## Operational notes
 

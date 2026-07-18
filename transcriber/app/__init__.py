@@ -1,1 +1,1 @@
-# GPU Transcription Service
+# Transcribalize service package

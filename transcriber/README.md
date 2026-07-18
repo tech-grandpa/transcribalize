@@ -1,72 +1,69 @@
-# GPU Transcription Service
+# Transcriber service
 
-Fast speech-to-text transcription using Whisper on GPU, with an experimental IBM Granite Speech file-transcription backend.
+This directory contains the FastAPI application, browser UI, Docker image, and tests for Transcribalize.
 
-## Quick Start
+For the project overview, hardware requirements, quick start, privacy boundary, and user workflows, read the [root README](../README.md). For endpoint details, read the [API reference](docs/API.md).
 
-```bash
-# Build and run
-docker compose up --build
+## Run with Docker Compose
 
-# Access
-open http://localhost:8000
-```
-
-## API
+From the repository root:
 
 ```bash
-# Transcribe to SRT
-curl -X POST http://localhost:8000/transcribe \
-  -F "file=@video.mp4" \
-  -F "format=srt"
-
-# Stream with progress
-curl -N -X POST http://localhost:8000/transcribe/stream \
-  -F "file=@audio.mp3"
-
-# Experimental Granite Speech 4.1 backend with keyword hints
-curl -X POST http://localhost:8000/transcribe \
-  -F "file=@audio.mp3" \
-  -F "asr_backend=granite-2b" \
-  -F "keyword_bias=Granite, Watson, OpenShift" \
-  -F "format=text"
+docker compose -f transcriber/docker-compose.yml up --build
 ```
 
-## Features
+The service listens on `http://localhost:8000`. The supplied Compose build:
 
-- **GPU-accelerated**: ~14x real-time on RTX 4000
-- **Multiple formats**: JSON, SRT, Markdown, Text
-- **Video support**: Extracts audio from MP4, MKV, etc.
-- **Large files**: direct uploads with progress, plus chunked uploads for Cloudflare-safe large-file handling
-- **Progress tracking**: upload, media-processing, transcription, and analysis stages are shown separately
-- **Languages**: English, German (auto-detect)
-- **ASR backends**: `whisper` by default, plus experimental file-only `granite-2b` and `granite-2b-plus`
-- **Keyword biasing**: Granite receives prompt keywords directly; Whisper receives them as a best-effort `initial_prompt`
+- requests one NVIDIA GPU
+- installs the default Whisper runtime and optional Granite/Parakeet dependencies
+- pre-downloads the Whisper model during the image build
+- stores Hugging Face models in a persistent Docker volume
+- mounts a 4 GiB temporary filesystem at `/tmp`
+- reads optional analysis and ASR settings from the repository-root `.env`
 
-## Experimental Granite Speech
+Granite and Parakeet model weights are downloaded when those backends are first used.
 
-Granite Speech is available only for uploaded file transcription. Live transcription stays on Whisper.
+## Service modules
 
-Install optional dependencies locally:
+- `app/main.py`: API routes, upload handling, workflow orchestration, and UI responses
+- `app/asr_providers.py`: file-transcription backend registry
+- `app/transcriber.py`: faster-whisper file transcription
+- `app/parakeet_transcriber.py`: NVIDIA Parakeet file transcription
+- `app/granite_transcriber.py`: IBM Granite Speech file transcription
+- `app/live_transcription.py`: WebSocket live transcription and VAD chunking
+- `app/llm.py`: optional transcript analysis through LiteLLM
+- `static/`: browser application and vendored Markdown/sanitizer assets
+
+## Optional ASR dependencies
+
+The Compose build enables `requirements-granite.txt`, which contains the shared Transformers dependencies for both Granite and Parakeet. For a local Python runtime, install it alongside the base requirements:
 
 ```bash
-pip install -r requirements-granite.txt
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-granite.txt
 ```
 
-Build Docker with Granite dependencies:
+Whisper is the default backend and the only backend used for live transcription.
+
+## Tests
+
+The API test environment uses lightweight stubs, so it does not need a GPU, model downloads, or API credentials.
 
 ```bash
-docker compose build --build-arg INSTALL_GRANITE=true
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-test.txt ruff
+pytest -q tests
+ruff check .
+python -m compileall -q app tests
+docker compose config -q
 ```
-
-The Granite integration is intentionally a first pass. It lazy-loads `transformers`, `torch`, and `torchaudio`, selects CUDA when available, and returns a clear runtime error if the optional dependencies or the required recent Transformers support are missing.
 
 ## Documentation
 
-- [docs/API.md](docs/API.md) for technical API details
-- [../docs/DEPLOYMENT.md](../docs/DEPLOYMENT.md) for update and deployment steps
-
-## Requirements
-
-- Docker with NVIDIA Container Toolkit
-- NVIDIA GPU with CUDA support
+- [Project README](../README.md)
+- [API reference](docs/API.md)
+- [Deployment guide](../docs/DEPLOYMENT.md)
+- [Contributing guide](../CONTRIBUTING.md)
+- [Security policy](../SECURITY.md)

@@ -13,13 +13,11 @@ Requirements:
 From the repository root:
 
 ```bash
-cp .env.example .env
-cd transcriber
-python3.12 -m venv .venv
-source .venv/bin/activate
+python3.12 -m venv transcriber/.venv
+source transcriber/.venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements-test.txt
-pytest -q tests
+python -m pip install -r transcriber/requirements-test.txt ruff
+pytest -q transcriber/tests
 ```
 
 Real API credentials are not required for the test suite. Never commit `.env`
@@ -31,11 +29,10 @@ transcripts.
 Run:
 
 ```bash
-ruff check .
-cd transcriber
-pytest -q tests
-python -m compileall -q app tests
-docker compose config -q
+ruff check transcriber
+pytest -q transcriber/tests
+python -m compileall -q transcriber/app transcriber/tests
+docker compose -f transcriber/docker-compose.yml config -q
 ```
 
 Keep pull requests focused and include regression tests for behavior changes.

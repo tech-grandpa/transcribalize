@@ -1,4 +1,4 @@
-# GPU Transcription Service Dependencies
+# Transcribalize service dependencies
 
 # Whisper transcription
 faster-whisper>=1.2.1
