@@ -8,7 +8,7 @@
 # Parakeet v3 uses AutoModelForTDT, which requires a recent Transformers build.
 # AutoProcessor for Parakeet also requires librosa at runtime.
 transformers>=4.56.0
-accelerate>=1.13.0
+accelerate>=1.14.0
 soundfile>=0.13.1
 torchcodec>=0.10.0
 librosa>=0.11.0
