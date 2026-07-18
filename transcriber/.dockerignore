@@ -1,0 +1,49 @@
+# Secrets and local configuration
+.env
+.env.*
+*.env
+
+# Version control and local tooling
+.git
+.gitignore
+.github
+.hermes
+.vscode
+.idea
+.DS_Store
+
+# Python environments and generated files
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.coverage
+htmlcov
+.venv
+.venv-*
+venv
+
+# Files not used by the runtime image
+sample-knowledge
+tests
+docs
+*.md
+*.log
+
+# Local models, uploads, and media
+models
+uploads
+*.mp3
+*.wav
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.webm
+*.m4a
+*.m4b
+*.m4p
+*.m4v

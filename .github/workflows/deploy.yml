@@ -1,0 +1,104 @@
+name: Deploy verified main
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    # Configure DEPLOY_RUNNER_LABELS as a JSON repository variable, for example:
+    # ["self-hosted", "deployment-runner"]
+    runs-on: ${{ fromJSON(vars.DEPLOY_RUNNER_LABELS) }}
+    environment:
+      name: production
+    timeout-minutes: 45
+    env:
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || vars.DEPLOY_PATH }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Validate deployment configuration
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_PATH" || { echo "DEPLOY_PATH is required"; exit 1; }
+          [[ "$DEPLOY_PATH" = /* ]] || { echo "DEPLOY_PATH must be absolute"; exit 1; }
+          [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid deployment commit"; exit 1; }
+
+      - name: Check out the verified commit
+        run: |
+          set -euo pipefail
+          if [ ! -d "$DEPLOY_PATH/.git" ]; then
+            mkdir -p "$(dirname "$DEPLOY_PATH")"
+            git clone --filter=blob:none "git@github.com:${{ github.repository }}.git" "$DEPLOY_PATH"
+          fi
+          git -C "$DEPLOY_PATH" fetch --prune origin main
+          git -C "$DEPLOY_PATH" cat-file -e "${DEPLOY_SHA}^{commit}"
+          git -C "$DEPLOY_PATH" checkout --detach --force "$DEPLOY_SHA"
+          git -C "$DEPLOY_PATH" clean -ffd
+
+      - name: Tag rollback image
+        run: |
+          set -euo pipefail
+          cd "$DEPLOY_PATH/transcriber"
+          IMAGE=$(docker compose images -q 2>/dev/null | head -1)
+          if [ -n "$IMAGE" ]; then
+            docker tag "$IMAGE" transcriber-rollback:latest
+            echo "Tagged rollback image"
+          else
+            echo "No existing image to tag as rollback"
+          fi
+
+      - name: Build and deploy
+        run: |
+          set -euo pipefail
+          cd "$DEPLOY_PATH/transcriber"
+          docker compose build
+          docker compose up -d
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          MAX_RETRIES=30
+          RETRY_DELAY=10
+          for i in $(seq 1 "$MAX_RETRIES"); do
+            if curl -fsS http://localhost:8000/health > /dev/null 2>&1; then
+              echo "Health check passed (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i/$MAX_RETRIES — retrying in ${RETRY_DELAY}s..."
+            sleep "$RETRY_DELAY"
+          done
+          echo "Health check failed after $MAX_RETRIES attempts"
+          exit 1
+
+      - name: Roll back on failure
+        if: failure()
+        run: |
+          set -euo pipefail
+          cd "$DEPLOY_PATH/transcriber"
+          echo "Rolling back to previous image..."
+          docker compose down
+          CURRENT_IMAGE=$(docker compose config --images | head -1)
+          ROLLBACK=$(docker images -q transcriber-rollback:latest 2>/dev/null)
+          if [ -n "$CURRENT_IMAGE" ] && [ -n "$ROLLBACK" ]; then
+            docker tag transcriber-rollback:latest "$CURRENT_IMAGE"
+            docker compose up -d
+            echo "Rollback completed"
+          else
+            echo "No rollback image is available"
+            exit 1
+          fi

@@ -1,0 +1,37 @@
+services:
+  transcriber:
+    build:
+      context: .
+      args:
+        INSTALL_GRANITE: "true"
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: ../.env
+        required: false
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      # Persist downloaded models between container restarts
+      - whisper-models:/models
+      # Mount tmpfs for fast temp file handling (optional, for large files)
+      - type: tmpfs
+        target: /tmp
+        tmpfs:
+          size: 4G
+    environment:
+      - HF_HOME=/models
+      - HF_HUB_CACHE=/models/hub
+      - HF_HUB_DISABLE_XET=1
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+      - PARAKEET_CHUNK_SECONDS=60
+      - PARAKEET_CHUNK_OVERLAP_SECONDS=0
+    restart: unless-stopped
+
+volumes:
+  whisper-models:

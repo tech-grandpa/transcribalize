@@ -1,0 +1,57 @@
+# Local shell and machine state
+/.bash_history
+/.gitconfig
+/.bash_logout
+/.bashrc
+/.cache/
+/.cursor/
+/.cursor-server/
+/.docker/
+/.profile
+/.ssh/
+/.sudo_as_admin_successful
+
+# Secrets and local configuration
+.env
+.env.*
+*.env
+!*.env.example
+!.env.example
+
+# Python environments and generated files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+.venv-*/
+venv/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# Logs and runtime/model data
+*.log
+uploads/
+models/
+
+# Local media inputs
+*.mp3
+*.wav
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.webm
+*.m4a
+*.m4b
+*.m4p
+*.m4v

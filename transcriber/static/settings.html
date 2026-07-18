@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Transcribalize</title>
+    <style>
+        :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+            --bg-0: #0c0c0c;
+            --bg-1: #141414;
+            --bg-2: #1c1c1c;
+            --bg-3: #252525;
+            --accent: #e09145;
+            --accent-dim: rgba(224, 145, 69, 0.15);
+            --accent-hover: #eba05a;
+            --accent-glow: rgba(224, 145, 69, 0.25);
+            --text-1: #ececec;
+            --text-2: #a0a0a0;
+            --text-3: #666;
+            --border: #2a2a2a;
+            --border-hover: #3a3a3a;
+            --green: #5cb868;
+            --red: #d95555;
+            --yellow: #d4a937;
+            --radius: 10px;
+            --radius-sm: 6px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-0);
+            color: var(--text-1);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        h1 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: var(--text-1);
+        }
+
+        h1 span { color: var(--accent); }
+
+        .back-link {
+            color: var(--text-3);
+            text-decoration: none;
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover { color: var(--text-2); }
+
+        .info-banner {
+            background: var(--accent-dim);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-2);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .card {
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-1);
+        }
+
+        .task-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: var(--bg-3);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-left: 0.75rem;
+        }
+
+        .task-badge.custom {
+            background: var(--accent);
+            color: var(--bg-0);
+        }
+
+        .task-badge.modified {
+            background: var(--yellow);
+            color: var(--bg-0);
+        }
+
+        label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        label:first-of-type { margin-top: 0; }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-1);
+            font-family: var(--font-sans);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            transition: border-color 0.2s;
+        }
+
+        textarea {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            min-height: 200px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.15rem;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-0);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-2);
+            color: var(--text-1);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            border-color: var(--border-hover);
+            background: var(--bg-3);
+        }
+
+        .btn-danger {
+            background: rgba(217, 85, 85, 0.1);
+            color: var(--red);
+            border: 1px solid rgba(217, 85, 85, 0.3);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .success-message, .error-message {
+            display: none;
+            padding: 0.85rem 1rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+
+        .success-message {
+            background: rgba(92, 184, 104, 0.1);
+            border: 1px solid rgba(92, 184, 104, 0.3);
+            color: var(--green);
+        }
+
+        .error-message {
+            background: rgba(217, 85, 85, 0.1);
+            border: 1px solid rgba(217, 85, 85, 0.3);
+            color: var(--red);
+        }
+
+        .success-message.visible, .error-message.visible { display: block; }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .task-card {
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .task-card-header {
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .task-card-header:hover {
+            background: var(--bg-2);
+            border-left-color: var(--accent);
+        }
+
+        .task-card-header::after {
+            content: 'Click to expand';
+            font-size: 0.7rem;
+            color: var(--text-3);
+            margin-left: 1rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .task-card-header:hover::after { opacity: 1; }
+        .task-card.expanded .task-card-header::after { content: 'Click to collapse'; }
+
+        .task-card-body {
+            padding: 0 1.25rem 1.25rem;
+            display: none;
+        }
+
+        .task-card.expanded .task-card-body { display: block; }
+
+        .task-card-header-left { flex: 1; }
+
+        .task-meta {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            margin-top: 0.25rem;
+        }
+
+        .expand-icon {
+            transition: all 0.2s;
+            color: var(--text-3);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+        }
+
+        .task-card-header:hover .expand-icon {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .task-card.expanded .expand-icon { transform: rotate(180deg); }
+
+        .add-task-section { margin-top: 2rem; }
+
+        .toolbar {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.visible { display: flex; }
+
+        .modal-content {
+            background: var(--bg-1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-1);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-3);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-3);
+            color: var(--text-1);
+        }
+
+        .modal-body { margin-bottom: 1.5rem; }
+
+        .modal-footer {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        select {
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.6rem center;
+        }
+
+        select:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        input[type="file"] { display: none; }
+
+        @media (max-width: 640px) {
+            .task-actions { flex-direction: column; }
+            .btn { width: 100%; }
+            .toolbar { flex-direction: column; }
+            .modal-content { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚙️ Analysis Settings</h1>
+            <a href="/" class="back-link">← Back to Analyzer</a>
+        </header>
+
+        <div class="info-banner">
+            ℹ️ Settings are stored locally in your browser. You can customize built-in prompts (creates an override) or add entirely new analysis tasks. Export your customizations to share them or back them up.
+        </div>
+
+        <div id="successMessage" class="success-message"></div>
+        <div id="errorMessage" class="error-message"></div>
+
+        <p style="color: var(--text-2); margin-bottom: 1rem; font-size: 0.85rem;">
+            👇 Click on any task below to expand and edit its prompt
+        </p>
+
+        <div class="task-list" id="taskList">
+            <!-- Tasks will be dynamically loaded here -->
+        </div>
+
+        <div class="add-task-section">
+            <div class="toolbar">
+                <button class="btn btn-primary" id="addTaskBtn">
+                    <span>+</span> Add New Analysis Task
+                </button>
+                <button class="btn btn-secondary" id="exportBtn">
+                    ⬇ Export Custom Prompts
+                </button>
+                <button class="btn btn-secondary" id="importBtn">
+                    ⬆ Import Custom Prompts
+                </button>
+                <input type="file" id="importFile" accept=".json">
+                <button class="btn btn-danger" id="resetAllBtn">
+                    🗑 Reset All to Defaults
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal" id="addTaskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add New Analysis Task</h2>
+                <button class="modal-close" id="closeModal">×</button>
+            </div>
+            <div class="modal-body">
+                <label>Display Name</label>
+                <input type="text" id="newTaskName" placeholder="My Custom Analysis" required>
+                
+                <label>Description</label>
+                <input type="text" id="newTaskDesc" placeholder="Brief description of what this analysis does" required>
+                
+                <label>System Prompt</label>
+                <textarea id="newTaskPrompt" placeholder="Enter the detailed prompt for the LLM..." required></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelModal">Cancel</button>
+                <button class="btn btn-primary" id="saveNewTask">Create Task</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'analyzer_custom_tasks';
+        const taskList = document.getElementById('taskList');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const importBtn = document.getElementById('importBtn');
+        const importFile = document.getElementById('importFile');
+        const resetAllBtn = document.getElementById('resetAllBtn');
+        const addTaskModal = document.getElementById('addTaskModal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelModal = document.getElementById('cancelModal');
+        const saveNewTask = document.getElementById('saveNewTask');
+        const newTaskName = document.getElementById('newTaskName');
+        const newTaskDesc = document.getElementById('newTaskDesc');
+        const newTaskPrompt = document.getElementById('newTaskPrompt');
+
+        let builtinTasks = {};
+        let customTasks = {};
+
+        // Generate UUID v4
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('visible');
+            setTimeout(() => successMessage.classList.remove('visible'), 3000);
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('visible');
+            setTimeout(() => errorMessage.classList.remove('visible'), 5000);
+        }
+
+        function loadCustomTasks() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                customTasks = stored ? JSON.parse(stored) : {};
+            } catch (e) {
+                customTasks = {};
+            }
+        }
+
+        function saveCustomTasks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(customTasks));
+        }
+
+        async function loadBuiltinTasks() {
+            try {
+                const response = await fetch('/tasks');
+                builtinTasks = await response.json();
+                renderTasks();
+            } catch (e) {
+                showError('Failed to load built-in tasks: ' + e.message);
+            }
+        }
+
+        function renderTasks() {
+            taskList.innerHTML = '';
+            
+            let isFirstCard = true;
+            
+            // Render built-in tasks
+            for (const [taskId, config] of Object.entries(builtinTasks)) {
+                const isModified = taskId in customTasks;
+                const currentConfig = isModified ? customTasks[taskId] : config;
+                const card = createTaskCard(taskId, currentConfig, true, isModified);
+                
+                // Expand the first card by default
+                if (isFirstCard) {
+                    card.classList.add('expanded');
+                    isFirstCard = false;
+                }
+                
+                taskList.appendChild(card);
+            }
+            
+            // Render custom-only tasks
+            for (const [taskId, config] of Object.entries(customTasks)) {
+                if (!(taskId in builtinTasks)) {
+                    const card = createTaskCard(taskId, config, false, false);
+                    
+                    // If no built-in tasks were rendered, expand the first custom task
+                    if (isFirstCard) {
+                        card.classList.add('expanded');
+                        isFirstCard = false;
+                    }
+                    
+                    taskList.appendChild(card);
+                }
+            }
+        }
+
+        function createTaskCard(taskId, config, isBuiltin, isModified) {
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            
+            const badge = isBuiltin 
+                ? (isModified ? '<span class="task-badge modified">Modified</span>' : '<span class="task-badge">Built-in</span>')
+                : '<span class="task-badge custom">Custom</span>';
+            
+            // Use a safe ID for DOM elements (replace dashes and special chars, prefix to avoid starting with digit)
+            const safeId = 'task_' + taskId.replace(/[^a-zA-Z0-9]/g, '_');
+            
+            let infoMessage = '';
+            if (isBuiltin && !isModified) {
+                infoMessage = '<p style="color: var(--text-2); background: var(--accent-dim); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.8rem;">💡 This is a built-in prompt. You can edit it to create a local override that only affects your browser.</p>';
+            } else if (isModified) {
+                infoMessage = '<p style="color: var(--yellow); background: rgba(212, 169, 55, 0.08); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.8rem;">⚠️ You have customized this built-in prompt. Click "Reset to Default" to restore the original.</p>';
+            }
+
+            // Build precondition options
+            const allTaskIds = [...Object.keys(builtinTasks), ...Object.keys(customTasks).filter(id => !(id in builtinTasks))];
+            const currentPre = config.precondition || null;
+            let preOptions = '<option value="">None (raw transcript)</option>';
+            for (const tid of allTaskIds) {
+                if (tid === taskId) continue;
+                const tName = (customTasks[tid] || builtinTasks[tid] || {}).name || tid;
+                const sel = currentPre === tid ? ' selected' : '';
+                preOptions += `<option value="${escapeHtml(tid)}"${sel}>${escapeHtml(tName)}</option>`;
+            }
+            
+            card.innerHTML = `
+                <div class="task-card-header">
+                    <div class="task-card-header-left">
+                        <div>
+                            <span class="card-title">${escapeHtml(config.name)}</span>
+                            ${badge}
+                        </div>
+                        <div class="task-meta">${escapeHtml(config.description)}</div>
+                    </div>
+                    <span class="expand-icon">▼</span>
+                </div>
+                <div class="task-card-body">
+                    ${infoMessage}
+                    
+                    <label>Display Name</label>
+                    <input type="text" id="${safeId}-name" value="${escapeHtml(config.name)}" required>
+                    
+                    <label>Description</label>
+                    <input type="text" id="${safeId}-desc" value="${escapeHtml(config.description)}" required>
+
+                    <label>Precondition</label>
+                    <select id="${safeId}-precondition" style="width:100%;padding:0.55rem 0.75rem;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);font-family:var(--font-sans);font-size:0.85rem;margin-bottom:0.5rem;">
+                        ${preOptions}
+                    </select>
+                    <div id="${safeId}-cycle-warn" style="display:none;color:var(--red);font-size:0.8rem;margin-bottom:0.5rem;">⚠️ This would create a circular dependency!</div>
+                    
+                    <label>System Prompt</label>
+                    <textarea id="${safeId}-prompt" required>${escapeHtml(config.prompt)}</textarea>
+                    
+                    <div class="task-actions">
+                        <button type="button" class="btn btn-primary save-btn">${isBuiltin && !isModified ? 'Save as Override' : 'Save Changes'}</button>
+                        ${isModified ? '<button type="button" class="btn btn-secondary reset-btn">Reset to Default</button>' : ''}
+                        ${!isBuiltin ? '<button type="button" class="btn btn-danger delete-btn">Delete Task</button>' : ''}
+                    </div>
+                </div>
+            `;
+
+            // Cycle detection for precondition dropdown
+            const preSelect = card.querySelector(`[id="${safeId}-precondition"]`);
+            const cycleWarn = card.querySelector(`[id="${safeId}-cycle-warn"]`);
+            preSelect.addEventListener('change', () => {
+                const selected = preSelect.value || null;
+                if (selected && wouldCreateCycle(taskId, selected)) {
+                    cycleWarn.style.display = 'block';
+                    preSelect.value = currentPre || '';
+                } else {
+                    cycleWarn.style.display = 'none';
+                }
+            });
+            
+            // Store the original taskId as data attribute
+            card.dataset.taskId = taskId;
+            
+            // Toggle expand/collapse
+            const header = card.querySelector('.task-card-header');
+            header.addEventListener('click', () => {
+                card.classList.toggle('expanded');
+            });
+            
+            // Save button
+            const saveBtn = card.querySelector('.save-btn');
+            saveBtn.addEventListener('click', () => saveTask(taskId, safeId, isBuiltin));
+            
+            // Reset button
+            const resetBtn = card.querySelector('.reset-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => resetTask(taskId));
+            }
+            
+            // Delete button
+            const deleteBtn = card.querySelector('.delete-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => deleteTask(taskId));
+            }
+            
+            return card;
+        }
+
+        function wouldCreateCycle(taskId, preconditionId) {
+            // Check if setting taskId's precondition to preconditionId would create a cycle
+            const visited = new Set([taskId]);
+            let current = preconditionId;
+            while (current) {
+                if (visited.has(current)) return true;
+                visited.add(current);
+                // Look up current's precondition
+                const cfg = customTasks[current] || builtinTasks[current] || {};
+                current = cfg.precondition || null;
+            }
+            return false;
+        }
+
+        function saveTask(taskId, safeId, isBuiltin) {
+            const nameInput = document.getElementById(`${safeId}-name`);
+            const descInput = document.getElementById(`${safeId}-desc`);
+            const promptInput = document.getElementById(`${safeId}-prompt`);
+            const preSelect = document.getElementById(`${safeId}-precondition`);
+            
+            const config = {
+                name: nameInput.value.trim(),
+                description: descInput.value.trim(),
+                prompt: promptInput.value.trim(),
+                precondition: preSelect.value || null,
+            };
+            
+            if (!config.name || !config.description || !config.prompt) {
+                showError('All fields are required');
+                return;
+            }
+            
+            customTasks[taskId] = config;
+            saveCustomTasks();
+            
+            if (isBuiltin) {
+                showSuccess(`Override saved! "${config.name}" now uses your custom settings.`);
+            } else {
+                showSuccess(`Task "${config.name}" saved!`);
+            }
+            renderTasks();
+        }
+
+        function resetTask(taskId) {
+            // Get the name from either custom or builtin
+            const taskName = customTasks[taskId]?.name || builtinTasks[taskId]?.name || 'this task';
+            
+            if (!confirm(`Reset "${taskName}" to default settings? Your custom changes will be lost.`)) return;
+            
+            delete customTasks[taskId];
+            saveCustomTasks();
+            showSuccess(`"${taskName}" reset to default settings!`);
+            renderTasks();
+        }
+
+        function deleteTask(taskId) {
+            if (!confirm(`Delete "${customTasks[taskId].name}"? This cannot be undone.`)) return;
+            
+            delete customTasks[taskId];
+            saveCustomTasks();
+            showSuccess('Task deleted!');
+            renderTasks();
+        }
+
+        // Modal controls
+        addTaskBtn.addEventListener('click', () => {
+            newTaskName.value = '';
+            newTaskDesc.value = '';
+            newTaskPrompt.value = '';
+            addTaskModal.classList.add('visible');
+            newTaskName.focus();
+        });
+
+        closeModal.addEventListener('click', () => {
+            addTaskModal.classList.remove('visible');
+        });
+
+        cancelModal.addEventListener('click', () => {
+            addTaskModal.classList.remove('visible');
+        });
+
+        // Close modal on outside click
+        addTaskModal.addEventListener('click', (e) => {
+            if (e.target === addTaskModal) {
+                addTaskModal.classList.remove('visible');
+            }
+        });
+
+        // Create new task
+        saveNewTask.addEventListener('click', () => {
+            const name = newTaskName.value.trim();
+            const description = newTaskDesc.value.trim();
+            const prompt = newTaskPrompt.value.trim();
+
+            if (!name || !description || !prompt) {
+                showError('All fields are required');
+                return;
+            }
+
+            const taskId = generateUUID();
+            customTasks[taskId] = { name, description, prompt, precondition: null };
+            
+            saveCustomTasks();
+            addTaskModal.classList.remove('visible');
+            showSuccess(`Task "${name}" created!`);
+            renderTasks();
+        });
+
+        // Export custom tasks
+        exportBtn.addEventListener('click', () => {
+            if (Object.keys(customTasks).length === 0) {
+                showError('No custom tasks or overrides to export');
+                return;
+            }
+
+            // Count overrides vs purely custom
+            let overrideCount = 0;
+            let customCount = 0;
+            for (const taskId of Object.keys(customTasks)) {
+                if (taskId in builtinTasks) {
+                    overrideCount++;
+                } else {
+                    customCount++;
+                }
+            }
+
+            const dataStr = JSON.stringify(customTasks, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analyzer-custom-tasks-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            const parts = [];
+            if (customCount > 0) parts.push(`${customCount} custom task(s)`);
+            if (overrideCount > 0) parts.push(`${overrideCount} override(s)`);
+            showSuccess(`Exported ${parts.join(' and ')}!`);
+        });
+
+        // Import custom tasks
+        importBtn.addEventListener('click', () => {
+            importFile.click();
+        });
+
+        importFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const imported = JSON.parse(text);
+
+                // Validate structure
+                if (typeof imported !== 'object' || Array.isArray(imported)) {
+                    throw new Error('Invalid format: expected object');
+                }
+
+                let importCount = 0;
+                for (const [taskId, config] of Object.entries(imported)) {
+                    if (!config.name || !config.description || !config.prompt) {
+                        console.warn(`Skipping invalid task: ${taskId}`);
+                        continue;
+                    }
+                    customTasks[taskId] = config;
+                    importCount++;
+                }
+
+                if (importCount === 0) {
+                    throw new Error('No valid tasks found in file');
+                }
+
+                saveCustomTasks();
+                renderTasks();
+                showSuccess(`Imported ${importCount} custom task(s)!`);
+            } catch (err) {
+                showError('Import failed: ' + err.message);
+            } finally {
+                importFile.value = '';
+            }
+        });
+
+        // Reset all to factory defaults
+        resetAllBtn.addEventListener('click', () => {
+            const customCount = Object.keys(customTasks).length;
+            if (customCount === 0) {
+                showSuccess('No customizations to reset.');
+                return;
+            }
+            
+            if (confirm(`This will delete all ${customCount} custom task(s) and override(s) from your browser.\n\nThis cannot be undone. Are you sure?`)) {
+                localStorage.removeItem(STORAGE_KEY);
+                customTasks = {};
+                renderTasks();
+                showSuccess('All customizations have been reset to defaults.');
+            }
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initial load
+        loadCustomTasks();
+        loadBuiltinTasks();
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# GPU Transcription Service Dependencies
+
+# Whisper transcription
+faster-whisper>=1.2.1
+
+# Web framework
+fastapi>=0.136.1
+uvicorn>=0.46.0
+python-multipart>=0.0.26
+websockets>=16.0
+
+# Async file handling for large uploads
+aiofiles>=25.1.0
+
+# Audio processing for live transcription
+numpy>=2.4.4
+
+# VAD for smart chunking (Silero VAD)
+torch>=2.11.0,<3.0.0
+torchaudio>=2.11.0,<3.0.0
+
+# LLM analysis (OpenRouter via LiteLLM)
+litellm>=1.83.7

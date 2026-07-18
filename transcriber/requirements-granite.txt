@@ -1,0 +1,14 @@
+# Optional experimental ASR backend dependencies.
+#
+# Install alongside requirements.txt only when using ASR backends:
+# - granite-2b
+# - granite-2b-plus
+# - parakeet-tdt-0.6b-v3
+#
+# Parakeet v3 uses AutoModelForTDT, which requires a recent Transformers build.
+# AutoProcessor for Parakeet also requires librosa at runtime.
+transformers>=4.56.0
+accelerate>=1.13.0
+soundfile>=0.13.1
+torchcodec>=0.10.0
+librosa>=0.11.0
