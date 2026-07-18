@@ -13,7 +13,7 @@ Transcribalize is a self-hosted application for turning audio, video, or existin
 |---|---|---|
 | File transcription | Audio or video upload | Plain text, Markdown, SRT, or JSON |
 | File analysis | Audio or video upload | Transcript plus selected analysis tasks |
-| Live transcription | Microphone, browser-tab audio, or both | A live transcript that can be copied or downloaded |
+| Live transcription | Microphone, browser-tab audio, or both | A live transcript that can be copied, downloaded, or sent to analysis |
 | Transcript analysis | Pasted transcript text | Improved transcript, summary, key points, documentation, or action items |
 | API integration | Files, text, chunks, or PCM audio | REST, Server-Sent Events, or WebSocket responses |
 
@@ -28,6 +28,7 @@ The supported Docker path requires:
 - Docker with Compose
 - NVIDIA Container Toolkit
 - enough disk space for the container image and selected model caches
+- outbound network access while building the image and downloading model artifacts
 
 The default Whisper implementation uses CUDA with `float16`; it does not fall back to CPU. Granite and Parakeet can select CPU in their Python integrations, but the supplied Compose deployment is built and tested as an NVIDIA GPU service.
 
@@ -43,7 +44,7 @@ cd transcribalize
 docker compose -f transcriber/docker-compose.yml up --build
 ```
 
-The first build downloads the default Whisper model. The Compose stack stores Hugging Face model data in the `whisper-models` volume so it survives container restarts.
+The first build downloads the default Whisper model and Silero VAD assets. The Compose stack stores Hugging Face model data in the `whisper-models` volume so it survives container restarts.
 
 When the service is ready, open:
 
@@ -79,15 +80,15 @@ The browser uses direct upload for files up to 95 MiB. Larger files are split in
 
 ### Live
 
-Capture microphone audio, browser-tab audio, or both. The browser sends 16 kHz mono PCM audio to the same host over WebSocket, and the server transcribes speech with Whisper and voice activity detection.
+Capture microphone audio, browser-tab audio, or both. The browser sends 16 kHz mono PCM audio to the same host over WebSocket, and the server transcribes speech with Whisper and voice activity detection. The completed transcript can be copied, downloaded as Markdown, or sent directly into the analysis workflow.
 
-Chrome or Firefox provides the best tab-audio capture support. Safari has limited support. The default server limit is four concurrent live sessions.
+Chrome or Firefox provides the best tab-audio capture support. Safari has limited support. Outside `localhost`, browser capture should be served over HTTPS/WSS. The default server limit is four concurrent live sessions.
 
 ### Text
 
 Paste an existing transcript and run analysis without uploading media or invoking an ASR model.
 
-Analysis results are rendered as sanitized Markdown. You can copy the current result or download the complete result set as one Markdown file. Browser preferences, custom prompts, and live-session recovery data are stored in browser local storage.
+Analysis results are rendered as sanitized Markdown. You can copy the current result or download the transcript and completed built-in task results as one Markdown file. Custom-task results can be copied individually; the combined download currently includes built-in task IDs only. Browser preferences, custom prompts, and live-session recovery data are stored in browser local storage.
 
 ## File transcription backends
 
@@ -96,13 +97,13 @@ Discover the running service's backend metadata at `GET /asr/providers`.
 | Backend ID | Model | File transcription | Live | Keyword hints | Notes |
 |---|---|---:|---:|---:|---|
 | `whisper` | faster-whisper large-v3-turbo | Yes | Yes | Yes | Default backend; supports incremental segment progress |
-| `parakeet-tdt-0.6b-v3` | NVIDIA Parakeet TDT 0.6B v3 | Yes | No | No | Multilingual Transformers backend; processes files in configurable chunks |
+| `parakeet-tdt-0.6b-v3` | NVIDIA Parakeet TDT 0.6B v3 | Yes | No | No | Experimental multilingual backend; processes files in configurable chunks |
 | `granite-2b` | IBM Granite Speech 4.1 2B | Yes | No | Yes | Experimental; returns file results after model generation |
 | `granite-2b-plus` | IBM Granite Speech 4.1 2B Plus | Yes | No | Yes | Experimental; currently exposed as plain file transcription |
 
 The supplied Compose configuration installs the optional Transformers dependencies used by Parakeet and Granite. Their model weights are downloaded when first selected and cached in the same persistent model volume.
 
-The API currently accepts `auto`, `en`, and `de` as language values. Keyword hints can be separated by commas or newlines. Whisper receives them as hotwords, Granite receives them as prompt keywords, and Parakeet ignores them.
+File-transcription endpoints accept `auto`, `en`, and `de` as language values. Whisper uses the selection; the current Granite and Parakeet integrations do not force recognition language. Keyword hints can be separated by commas or newlines. Whisper receives them as hotwords, Granite receives them as prompt keywords, and Parakeet ignores them.
 
 ### Supported media
 
@@ -110,7 +111,7 @@ Audio: `.mp3`, `.wav`, `.flac`, `.ogg`, `.m4a`, `.aac`, `.wma`, `.opus`, `.webm`
 
 Video: `.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.flv`, `.mpeg`, `.mpg`, `.ts`, `.webm`
 
-FFmpeg converts accepted input to 16 kHz mono WAV before transcription.
+FFmpeg converts accepted input to 16 kHz mono WAV before transcription. Acceptance is based on the filename extension; the submitted MIME type is not used to validate the media format.
 
 ## Optional transcript analysis
 
@@ -135,7 +136,7 @@ Restart the service after changing `.env`:
 docker compose -f transcriber/docker-compose.yml up -d --build
 ```
 
-The server accepts only model IDs listed by `GET /models`; the allowlist is defined in [`transcriber/app/llm.py`](transcriber/app/llm.py). Provider use may incur cost and is governed by that provider's data-retention and usage policies.
+Explicit model selections must use an ID listed by `GET /models`; the allowlist is defined in [`transcriber/app/llm.py`](transcriber/app/llm.py). If `DEFAULT_MODEL` is overridden, keep it in that allowlist because an omitted model selection uses the configured default. Provider use may incur cost and is governed by that provider's data-retention and usage policies.
 
 ### Built-in analysis tasks
 
@@ -185,6 +186,8 @@ curl -N -X POST http://localhost:8000/analyze/stream \
   -F "tasks=keypoints"
 ```
 
+Analysis SSE reports workflow and completed-task events; it does not stream individual LLM tokens.
+
 ### Large-file uploads
 
 Direct API uploads are capped at 95 MiB. Clients can inspect the active limits at `GET /upload/config`. The browser switches to this chunked flow automatically for larger files:
@@ -196,6 +199,8 @@ Direct API uploads are capped at 95 MiB. Clients can inspect the active limits a
 
 Completed upload sessions are removed after the streaming analysis/transcription workflow consumes them. Reverse proxies may impose stricter request or timeout limits, so configure them separately.
 
+Only `/analyze/stream` accepts an assembled `upload_id`. The current chunked-upload protocol limits each part but does not enforce a total session-size ceiling or checksum. Abandoned or failed sessions have no automatic expiry and may remain in temporary storage, so network-accessible deployments should add proxy quotas and operational cleanup.
+
 ## Configuration
 
 The repository-root [`.env.example`](.env.example) contains safe placeholders. Docker Compose passes that file into the service when a local `.env` exists.
@@ -204,7 +209,7 @@ The repository-root [`.env.example`](.env.example) contains safe placeholders. D
 |---|---|---|
 | `OPENAI_API_KEY` | unset | Credential for optional LLM analysis |
 | `OPENAI_BASE_URL` | unset | OpenAI-compatible API endpoint; the example uses OpenRouter |
-| `DEFAULT_MODEL` | `anthropic/claude-opus-4.8` | Default allowlisted analysis model |
+| `DEFAULT_MODEL` | `anthropic/claude-opus-4.8` | Model used when a request omits an explicit selection; keep it in the code-defined allowlist |
 | `ASR_BACKEND` | `whisper` | Default file-transcription backend |
 | `GRANITE_MAX_NEW_TOKENS` | `2000` | Granite generation limit |
 | `GRANITE_TORCH_DTYPE` | `bfloat16` | Granite model dtype |
@@ -230,10 +235,11 @@ FFmpeg   WebSocket        |
   +---- ASR provider ----+
           |
       transcript
-          |
-   optional LLM tasks
-          |
- text / Markdown / SRT / JSON
+       /       \
+      v         v
+local outputs   optional external LLM provider
+(text/Markdown/SRT/JSON)      |
+                          analysis Markdown
 ```
 
 The main components are:
@@ -251,8 +257,8 @@ The main components are:
 
 - File and live transcription run locally on the Transcribalize host.
 - LLM analysis sends transcript text to the configured provider.
-- Direct uploads are bounded; larger browser uploads use bounded chunks.
-- Uploaded media is processed in temporary storage. Completed chunked uploads are cleaned up after consumption.
+- Direct uploads are capped at 95 MiB; larger browser uploads use individually bounded 8 MiB chunks, but total chunked-session size is not currently capped.
+- Uploaded media is processed in temporary storage. Consumed chunked sessions are cleaned up, but abandoned or failed sessions have no automatic expiry.
 - The browser UI ships its script dependencies locally and serves a restrictive Content Security Policy and related security headers.
 - The service does not provide authentication, authorization, user isolation, or TLS.
 

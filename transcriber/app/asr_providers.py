@@ -48,8 +48,8 @@ ASR_PROVIDERS: dict[str, ASRProvider] = {
     "parakeet-tdt-0.6b-v3": ASRProvider(
         id="parakeet-tdt-0.6b-v3",
         name="NVIDIA Parakeet TDT 0.6B v3",
-        description="Multilingual NVIDIA Parakeet backend via Transformers.",
-        experimental=False,
+        description="Experimental multilingual NVIDIA Parakeet backend via Transformers.",
+        experimental=True,
         supports_keywords=False,
         supports_streaming=False,
     ),

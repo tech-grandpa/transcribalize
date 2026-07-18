@@ -427,7 +427,7 @@ def test_asr_provider_list_and_keyword_parsing(client):
     ids = [item["id"] for item in providers]
     assert ids == ["whisper", "parakeet-tdt-0.6b-v3", "granite-2b", "granite-2b-plus"]
     by_id = {item["id"]: item for item in providers}
-    assert by_id["parakeet-tdt-0.6b-v3"]["experimental"] is False
+    assert by_id["parakeet-tdt-0.6b-v3"]["experimental"] is True
     assert by_id["granite-2b"]["experimental"] is True
 
     assert parse_keyword_bias("Granite, Watson\nOpenAI\r\nGranite") == [

@@ -168,6 +168,8 @@ Cloudflare rejects oversized single-request uploads before the app can return a 
   - `POST /upload/complete`
   - then `POST /analyze/stream` with `upload_id`
 
+The supplied Compose service mounts a 4 GiB `tmpfs` at `/tmp`. Chunk parts, the assembled media file, and extracted WAV data can coexist there, so practical large-file capacity is lower than 4 GiB. The application does not expire abandoned upload sessions automatically; shared deployments should add temporary-storage monitoring and cleanup.
+
 ### Where to edit model availability
 
 Edit:

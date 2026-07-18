@@ -12,7 +12,7 @@ The Live mode in the main browser application can capture:
 - browser-tab audio through `navigator.mediaDevices.getDisplayMedia()`
 - microphone and tab audio mixed in the browser
 
-The browser converts the selected source to 16 kHz mono PCM16 and sends binary chunks to `/ws/transcribe`. The same page displays final transcript chunks, tracks the detected language, retains recovery data in browser local storage, and can export the transcript as Markdown.
+The browser converts the selected source to 16 kHz mono PCM16 and sends binary chunks to `/ws/transcribe`. The same page displays final transcript chunks, tracks the detected language, retains recovery data in browser local storage, exports the transcript as Markdown, and can send it into the analysis workflow.
 
 Chrome and Firefox provide the best tab-audio capture support. Safari can capture microphone input but has limited tab-audio support. Browser security rules require user interaction and permission before capture starts.
 
@@ -116,7 +116,7 @@ These checks protect the application process, but they are not a substitute for 
 
 ## Privacy and storage
 
-Live audio is processed by the self-hosted service and is not sent to the configured LLM provider. The server keeps audio in memory long enough to form transcription chunks; it does not intentionally save a live recording.
+Live audio is processed by the self-hosted service and is not sent to the configured LLM provider. The server keeps audio in memory long enough to form transcription chunks; it does not intentionally save a live recording. If the user sends the completed transcript into analysis, the transcript text is then sent to the configured LLM provider.
 
 The browser stores transcript recovery text and related session metadata in local storage. Users can clear the live transcript from the UI or clear site data in the browser.
 

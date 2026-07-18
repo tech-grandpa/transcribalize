@@ -229,8 +229,8 @@ Example response:
   {
     "id": "parakeet-tdt-0.6b-v3",
     "name": "NVIDIA Parakeet TDT 0.6B v3",
-    "description": "Multilingual NVIDIA Parakeet backend via Transformers.",
-    "experimental": false,
+    "description": "Experimental multilingual NVIDIA Parakeet backend via Transformers.",
+    "experimental": true,
     "supports_keywords": false,
     "supports_streaming": false
   }
@@ -715,7 +715,7 @@ These are normal HTML pages served by the FastAPI app:
 | Path | Page |
 |---|---|
 | `/` | Main upload, pasted transcript, transcription, and analysis UI |
-| `/live` | Live microphone transcription UI |
+| `/live` | Compatibility redirect to the main UI's Live mode |
 | `/settings` | Settings/task configuration UI |
 | `/static/*` | Static assets |
 
@@ -727,7 +727,7 @@ Standard FastAPI validation errors use HTTP `422`. Application-level errors gene
 
 | Status | Common cause |
 |---:|---|
-| `400` | Invalid language, format, ASR backend, task, chunk index, upload source combination, or unsupported file type |
+| `400` | Invalid transcription language, format, ASR backend, task, chunk index, upload source combination, or unsupported file type |
 | `409` | Upload session is already completed |
 | `413` | Direct upload or chunk is too large |
 | `422` | FFmpeg/audio extraction failed or FastAPI request validation failed |
@@ -749,10 +749,12 @@ SSE endpoints report workflow failures as events when possible:
 
 ## Operational notes
 
-- **Processing model:** Uploaded files are written to temporary storage and converted with FFmpeg before ASR.
+- **Processing model:** `/transcribe` streams direct uploads to temporary storage. Streaming and analysis endpoints may read a direct upload into memory before writing it to temporary storage for FFmpeg and ASR.
 - **GPU usage:** Whisper and local ASR backends are GPU-oriented in deployment. Performance depends on model, GPU, media duration, and cold-start state.
 - **First request latency:** The first request may be slower while models load.
 - **Long-running requests:** For long files, prefer `/transcribe/stream` or `/analyze/stream`, and configure reverse-proxy timeouts accordingly.
+- **Chunked uploads:** Only `/analyze/stream` consumes an assembled `upload_id`. Individual chunks are size-limited, but the protocol has no total session-size ceiling, checksum, or automatic expiry for abandoned sessions. Add operational cleanup and proxy quotas for shared deployments.
+- **Media validation:** File acceptance is based on the allowlisted filename extension. The submitted MIME type is not used to validate the media format; FFmpeg rejects content it cannot decode.
 - **External services:** Backend-to-backend callers can use the REST/SSE endpoints directly. Browser clients hosted on a different origin may need CORS configured at the reverse proxy or in the FastAPI app.
 - **Privacy:** Transcription runs in the service environment. LLM analysis sends transcript text to the configured LiteLLM/OpenAI-compatible provider.
 

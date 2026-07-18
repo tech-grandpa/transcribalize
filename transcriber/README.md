@@ -21,7 +21,7 @@ The service listens on `http://localhost:8000`. The supplied Compose build:
 - mounts a 4 GiB temporary filesystem at `/tmp`
 - reads optional analysis and ASR settings from the repository-root `.env`
 
-Granite and Parakeet model weights are downloaded when those backends are first used.
+Granite and Parakeet model weights are downloaded when those backends are first used. Both integrations are experimental and file-only.
 
 ## Service modules
 
