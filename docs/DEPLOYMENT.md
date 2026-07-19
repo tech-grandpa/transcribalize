@@ -8,6 +8,36 @@ Start with the root [README](../README.md) for hardware requirements and local
 setup. This guide covers deployment configuration, updates, rollback, and
 operational checks.
 
+## Published image deployment
+
+The recommended deployment path does not require a repository checkout. Pull
+the versioned public image and run it with NVIDIA Container Toolkit:
+
+```bash
+docker run -d \
+  --name transcribalize \
+  --restart unless-stopped \
+  --gpus all \
+  -p 8000:8000 \
+  -v transcribalize-models:/models \
+  ghcr.io/tech-grandpa/transcribalize:0.1.0
+```
+
+Add `--env-file /path/to/transcribalize.env` before the image name when LLM
+analysis or non-default runtime settings are needed. Keep that file outside any
+source checkout and restrict its permissions.
+
+To update within the `0.1` release line:
+
+```bash
+docker pull ghcr.io/tech-grandpa/transcribalize:0.1
+docker rm -f transcribalize
+# Re-run the docker run command above with the 0.1 image tag.
+```
+
+Use the full version tag or registry digest when reproducibility is more
+important than following patch releases automatically.
+
 
 ## Private deployment configuration
 

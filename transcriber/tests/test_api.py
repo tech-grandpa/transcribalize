@@ -105,6 +105,7 @@ def test_health_models_and_upload_config(client):
     assert openapi.status_code == 200
     schema = openapi.json()
     assert schema["info"]["title"] == "Transcribalize API"
+    assert schema["info"]["version"] == "0.1.0"
     assert "audio/video transcription" in schema["info"]["summary"]
     assert "chunked upload" in schema["info"]["description"]
     assert schema["paths"]["/analyze/stream"]["post"]["summary"] == (

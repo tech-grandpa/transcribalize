@@ -1,0 +1,152 @@
+name: Publish container
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Validate stable semantic version tag
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Expected a stable semantic version tag such as v0.1.0" >&2
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pinned Gitleaks CLI
+        run: |
+          set -euo pipefail
+          VERSION=8.30.0
+          ARCHIVE="gitleaks_${VERSION}_linux_x64.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSLo "$ARCHIVE" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/${ARCHIVE}"
+          echo "79a3ab579b53f71efd634f3aaf7e04a0fa0cf206b7ed434638d1547a2470a66e  ${ARCHIVE}" \
+            | sha256sum --check --strict
+          tar -xzf "$ARCHIVE" gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+
+      - name: Scan source and history for secrets
+        run: gitleaks git --no-banner --redact .
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Lint with Ruff
+        run: |
+          python -m pip install --disable-pip-version-check ruff==0.15.10
+          ruff check .
+
+      - name: Install system test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Run API tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r transcriber/requirements-test.txt
+          pytest -q transcriber/tests
+
+      - name: Validate Docker Compose configuration
+        working-directory: transcriber
+        run: docker compose config -q
+
+      - name: Check Dockerfile with BuildKit
+        working-directory: transcriber
+        run: docker buildx build --check --build-arg INSTALL_GRANITE=true .
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Reclaim runner disk space
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune --all --force
+          df -h /
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image metadata
+        id: metadata
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+            type=sha,format=long
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ./transcriber
+          file: ./transcriber/Dockerfile
+          platforms: linux/amd64
+          build-args: |
+            INSTALL_GRANITE=true
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Verify published manifest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          test -n "$DIGEST"
+          docker buildx imagetools inspect "${IMAGE_NAME}@${DIGEST}"
+          {
+            echo "### Published container"
+            echo
+            echo "- Image: \`${IMAGE_NAME}\`"
+            echo "- Version: \`${GITHUB_REF_NAME#v}\`"
+            echo "- Digest: \`${DIGEST}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -46,15 +46,21 @@ Transcribalize has no built-in login or API authentication. Do not expose it dir
 
 ## Quick start
 
-Transcription works without an LLM API key.
+Transcription works without an LLM API key. Pull and run the published GPU image; no repository clone is required:
 
 ```bash
-git clone https://github.com/tech-grandpa/transcribalize.git
-cd transcribalize
-docker compose -f transcriber/docker-compose.yml up --build
+docker run -d \
+  --name transcribalize \
+  --restart unless-stopped \
+  --gpus all \
+  -p 8000:8000 \
+  -v transcribalize-models:/models \
+  ghcr.io/tech-grandpa/transcribalize:0.1.0
 ```
 
-The first build downloads the default Whisper model and Silero VAD assets. The Compose stack stores Hugging Face model data in the `whisper-models` volume so it survives container restarts.
+The image is published for `linux/amd64` and includes the default Whisper model plus the optional Parakeet and Granite runtime dependencies. The named volume preserves downloaded model data across container replacements. Add `--env-file /path/to/transcribalize.env` before the image name to enable optional LLM analysis with your own provider configuration.
+
+Published release tags include `0.1.0`, the rolling `0.1` and `0` aliases, and `latest`. Production deployments should prefer the full version tag or the immutable digest shown by the package registry.
 
 When the service is ready, open:
 
@@ -72,7 +78,23 @@ Expected response:
 {"status":"ok"}
 ```
 
-Stop the service with:
+Stop and remove the container with:
+
+```bash
+docker rm -f transcribalize
+```
+
+### Build from source
+
+To build the current source instead of using the published image:
+
+```bash
+git clone https://github.com/tech-grandpa/transcribalize.git
+cd transcribalize
+docker compose -f transcriber/docker-compose.yml up --build
+```
+
+Stop the source-built Compose service with:
 
 ```bash
 docker compose -f transcriber/docker-compose.yml down

@@ -4,7 +4,21 @@ This directory contains the FastAPI application, browser UI, Docker image, and t
 
 For the project overview, hardware requirements, quick start, privacy boundary, and user workflows, read the [root README](../README.md). For endpoint details, read the [API reference](docs/API.md).
 
-## Run with Docker Compose
+## Run the published image
+
+No repository checkout is required:
+
+```bash
+docker run -d \
+  --name transcribalize \
+  --restart unless-stopped \
+  --gpus all \
+  -p 8000:8000 \
+  -v transcribalize-models:/models \
+  ghcr.io/tech-grandpa/transcribalize:0.1.0
+```
+
+## Build with Docker Compose
 
 From the repository root:
 
