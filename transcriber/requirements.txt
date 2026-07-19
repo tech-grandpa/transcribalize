@@ -13,11 +13,13 @@ websockets>=16.0
 aiofiles>=25.1.0
 
 # Audio processing for live transcription
-numpy>=2.4.4
+# Numba 0.65.x (via librosa in the optional ASR stack) requires NumPy <2.5.
+numpy>=2.4.4,<2.5
 
-# VAD for smart chunking (Silero VAD)
-torch>=2.11.0,<3.0.0
-torchaudio>=2.11.0,<3.0.0
+# VAD and optional ASR audio I/O use native TorchAudio extensions.
+# Keep Torch and TorchAudio on the same release; cross-release pairs are unsupported.
+torch==2.11.0
+torchaudio==2.11.0
 
 # LLM analysis (OpenRouter via LiteLLM)
 litellm>=1.83.7

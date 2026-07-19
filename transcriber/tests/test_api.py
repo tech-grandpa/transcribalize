@@ -136,6 +136,7 @@ def test_frontend_uses_local_assets_and_sanitizes_markdown():
     settings_html = (REPO_ROOT / "static" / "settings.html").read_text(encoding="utf-8")
 
     assert "<title>Transcribalize</title>" in index_html
+    assert '<div class="logo">Transcribalize<span>.</span></div>' in index_html
     assert "<title>Settings - Transcribalize</title>" in settings_html
 
     for html in (index_html, settings_html):
