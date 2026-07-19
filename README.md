@@ -108,7 +108,7 @@ The main page has three modes.
 
 Drop an audio or video file, choose an ASR backend and language, then transcribe it. If you configure an LLM provider, you can select analysis tasks and an output language in the same workflow.
 
-The browser uses direct upload for files up to 95 MiB. Larger files are split into 8 MiB chunks and assembled by the service before processing.
+The browser uses direct upload for files up to 95 MiB. Larger files are split into 8 MiB chunks and assembled by the service before processing. This is especially useful when Transcribalize is behind an edge firewall or reverse proxy such as Cloudflare: each request stays below the proxy's per-request upload-size limit, so the complete file can be larger than that limit. Proxy timeouts, rate limits, and any deployment-wide storage quotas still apply.
 
 ### Live
 
