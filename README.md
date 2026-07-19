@@ -7,6 +7,16 @@
 
 Transcribalize is a self-hosted application for turning audio, video, or existing transcript text into useful written output. It combines local GPU transcription, a browser interface, REST and streaming APIs, live browser capture, and optional LLM analysis in one FastAPI service.
 
+## Screenshots
+
+### Transcription workspace
+
+![Transcribalize file transcription workspace showing upload, language, ASR backend, and analysis model controls](docs/assets/transcribalize-main.png)
+
+### Analysis settings
+
+![Transcribalize analysis settings showing editable built-in prompt configuration](docs/assets/transcribalize-settings.png)
+
 ## What you can do
 
 | Workflow | Input | Result |
