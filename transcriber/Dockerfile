@@ -1,7 +1,7 @@
 # GPU-accelerated transcription service using faster-whisper
 # Using CUDA 12.x (faster-whisper wheels are built against CUDA 12)
 # Driver 580.x is backward compatible with CUDA 12
-FROM nvidia/cuda:12.6.3-cudnn-devel-ubuntu24.04
+FROM nvidia/cuda:13.3.1-cudnn-devel-ubuntu24.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
