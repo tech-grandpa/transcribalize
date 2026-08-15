@@ -5,7 +5,7 @@ faster-whisper>=1.2.1
 
 # Web framework
 fastapi>=0.140.0
-uvicorn>=0.51.0
+uvicorn>=0.52.1
 python-multipart>=0.0.32
 websockets>=16.0
 
