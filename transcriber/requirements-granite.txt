@@ -9,6 +9,6 @@
 # AutoProcessor for Parakeet also requires librosa at runtime.
 transformers>=5.15.0
 accelerate>=1.14.0
-soundfile>=0.13.1
+soundfile>=0.14.0
 torchcodec>=0.15.0
 librosa>=1.0.0
