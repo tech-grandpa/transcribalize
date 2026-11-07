@@ -45,6 +45,7 @@ Granite and Parakeet model weights are downloaded when those backends are first 
 - `app/parakeet_transcriber.py`: NVIDIA Parakeet file transcription
 - `app/granite_transcriber.py`: IBM Granite Speech file transcription
 - `app/live_transcription.py`: WebSocket live transcription and VAD chunking
+- `app/websocket_protocol.py`: SansIO message fragment limit, selected by the Docker command
 - `app/llm.py`: optional transcript analysis through LiteLLM
 - `static/`: browser application and vendored Markdown/sanitizer assets
 

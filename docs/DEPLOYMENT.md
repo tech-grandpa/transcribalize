@@ -112,6 +112,54 @@ ignored local file or in your deployment secret manager.
 
 The service is exposed on `http://localhost:8000`.
 
+## WebSocket fragment limit
+
+Images built from this source select
+`app.websocket_protocol:BoundedWebSocketsProtocol` explicitly. It extends
+Uvicorn's non-deprecated `websockets-sansio` implementation and allows at most
+4,096 data frames per message, including the initial frame and the final
+continuation. Ping, pong, and close frames do not count. The next data fragment
+closes the connection with code 1009 and releases the accumulated fragments,
+even if the sender never finishes the message. Normal message-size limits and
+compression still apply.
+
+For a direct Python deployment, run from `transcriber/` with:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 \
+  --ws app.websocket_protocol:BoundedWebSocketsProtocol
+```
+
+Do not replace this with bare `uvicorn app.main:app`, `--ws auto`, or
+`--ws websockets-sansio`. Those paths bypass this adapter. Existing published
+images are unchanged; rebuild and restart to pick up this mitigation. Compose
+inherits the Dockerfile command, but custom commands must retain `--ws` above.
+
+Uvicorn 0.54.0 has no fragment-count setting. `--ws-max-size` only limits bytes,
+so empty fragments bypass it. `--ws-max-queue` is a completed-message queue
+setting for the legacy protocol, not a SansIO fragment limit. ASGI handlers see
+only complete messages and cannot enforce this bound. The adapter uses Uvicorn's
+custom protocol selection rather than monkey-patching or switching to the
+deprecated legacy WebSocket implementation.
+
+The overridden handlers and `frames` list are Uvicorn internals, not a stable
+extension API. Production and test requirements constrain Uvicorn to the 0.54
+release line. Before lifting that bound, inspect the SansIO handlers and run
+`pytest -q transcriber/tests` from the repository root. Replace the adapter with
+an upstream fragment-count setting when one becomes available. The wire tests
+read the protocol selection from the Dockerfile so accidentally removing the
+flag fails CI.
+
+This bounds retained per-message fragments across TCP reads, not all server
+memory or CPU use. Keep TLS, authentication, connection limits, and rate limits
+at the deployment boundary. Rolling back to an older image also removes this
+mitigation; restrict WebSocket access during rollback. The pre-existing `stop`
+response still ends without an explicit close frame, observed as code 1006.
+This change does not alter that application behavior.
+
+References: [Uvicorn settings](https://uvicorn.dev/settings/) and
+[Uvicorn 0.54.0 SansIO implementation](https://github.com/Kludex/uvicorn/blob/0.54.0/uvicorn/protocols/websockets/websockets_sansio_impl.py).
+
 ## How to update the service
 
 ### 1. Pull the latest code
