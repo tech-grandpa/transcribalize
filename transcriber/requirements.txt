@@ -7,7 +7,7 @@ faster-whisper>=1.2.1
 fastapi>=0.162.0
 uvicorn>=0.54.0
 python-multipart>=0.0.33
-websockets>=16.0
+websockets>=17.4
 
 # Async file handling for large uploads
 aiofiles>=25.1.0
