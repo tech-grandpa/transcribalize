@@ -3,3 +3,7 @@ fastapi>=0.162.0
 aiofiles>=25.1.0
 python-multipart>=0.0.33
 httpx>=0.28.1
+# Exercise the image's real WebSocket transport without GPU model dependencies.
+uvicorn>=0.54.0,<0.55
+websockets>=16.0
+numpy>=2.4.4,<2.5
