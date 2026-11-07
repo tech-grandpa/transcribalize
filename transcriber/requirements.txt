@@ -19,7 +19,7 @@ numpy>=2.4.4,<2.5
 # VAD and optional ASR audio I/O use native TorchAudio extensions.
 # Keep Torch and TorchAudio on the same release; cross-release pairs are unsupported.
 torch==2.11.0
-torchaudio==2.11.0
+torchaudio==2.11.1
 
 # LLM analysis (OpenRouter via LiteLLM)
 litellm>=1.106.6
