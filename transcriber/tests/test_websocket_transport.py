@@ -134,6 +134,58 @@ def test_overflow_discards_remaining_frames_in_same_tcp_batch(next_opcode):
 
 
 @pytest.mark.parametrize(
+    "terminal_frames,expected_code",
+    [
+        pytest.param(
+            [
+                Frame(Opcode.CONT, b"", fin=False),
+                Frame(Opcode.BINARY, b"", fin=False),
+            ],
+            1002,
+            id="parser-error",
+        ),
+        pytest.param(
+            [
+                Frame(Opcode.CONT, b"", fin=True),
+                Frame(Opcode.CLOSE, b"\x03\xe8"),
+            ],
+            1000,
+            id="peer-close",
+        ),
+    ],
+)
+def test_same_batch_terminal_frame_closes_and_clears_retained_fragments(
+    terminal_frames, expected_code
+):
+    async def scenario():
+        async with running_server() as (url, protocols):
+            async with connect(url, compression=None) as client:
+                send_frames(
+                    client,
+                    [Frame(Opcode.BINARY, b"", fin=False)]
+                    + [Frame(Opcode.CONT, b"", fin=False) for _ in range(4095)],
+                )
+                await asyncio.wait_for(await client.ping(), 2)
+                assert len(protocols[0].frames) == 4096
+
+                # Uvicorn gives the full TCP read to websockets before it
+                # dispatches frames. A later parser error or peer close may
+                # therefore choose the wire close code before the adapter sees
+                # the 4,097th data frame; retained fragments must still clear.
+                send_frames(client, terminal_frames)
+                with pytest.raises(ConnectionClosed) as closed:
+                    await asyncio.wait_for(client.recv(), 2)
+                assert closed.value.rcvd.code == expected_code
+                assert protocols[0].frames == []
+                assert not any(
+                    event["type"] == "websocket.receive"
+                    for event in protocols[0].queue._queue
+                )
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
     "opcode,payload", [(Opcode.BINARY, b"ok"), (Opcode.TEXT, "ä".encode())]
 )
 def test_4096_fragments_allow_control_frames_and_reset_per_message(opcode, payload):

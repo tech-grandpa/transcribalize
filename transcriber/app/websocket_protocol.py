@@ -10,6 +10,8 @@ MAX_MESSAGE_FRAGMENTS = 4096
 class BoundedWebSocketsProtocol(WebSocketsSansIOProtocol):
     """Keep Uvicorn's SansIO behavior, but bound its per-message frame list."""
 
+    frames: list[bytes]
+
     def handle_text(self, event: Frame) -> None:
         if not self.close_sent:
             super().handle_text(event)
@@ -17,6 +19,12 @@ class BoundedWebSocketsProtocol(WebSocketsSansIOProtocol):
     def handle_bytes(self, event: Frame) -> None:
         if not self.close_sent:
             super().handle_bytes(event)
+
+    def handle_parser_exception(self) -> None:
+        # Parsing can fail before Uvicorn dispatches a continuation from the
+        # same TCP read, so release any previously retained message fragments.
+        self.frames.clear()
+        super().handle_parser_exception()
 
     def handle_cont(self, event: Frame) -> None:
         # Uvicorn may already have parsed more frames from the same TCP read.

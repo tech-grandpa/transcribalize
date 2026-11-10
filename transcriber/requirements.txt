@@ -5,8 +5,8 @@ faster-whisper>=1.2.1
 
 # Web framework
 fastapi>=0.162.0
-# The fragment-limit adapter uses SansIO internals; review it on minor upgrades.
-uvicorn>=0.54.0,<0.55
+# The fragment-limit adapter uses private SansIO internals; test before changing.
+uvicorn==0.54.0
 python-multipart>=0.0.33
 websockets>=16.0
 

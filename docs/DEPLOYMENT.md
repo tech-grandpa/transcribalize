@@ -119,8 +119,12 @@ Images built from this source select
 Uvicorn's non-deprecated `websockets-sansio` implementation and allows at most
 4,096 data frames per message, including the initial frame and the final
 continuation. Ping, pong, and close frames do not count. The next data fragment
-closes the connection with code 1009 and releases the accumulated fragments,
-even if the sender never finishes the message. Normal message-size limits and
+normally closes the connection with code 1009 and releases the accumulated
+fragments, even if the sender never finishes the message. If that fragment and
+a protocol error or peer close arrive in the same TCP read, the SansIO parser
+may select code 1002 or the peer's close code before Uvicorn dispatches the
+fragment. Those paths still close the connection, release retained fragments,
+and deliver no oversized message to ASGI. Normal message-size limits and
 compression still apply.
 
 For a direct Python deployment, run from `transcriber/` with:
@@ -143,12 +147,13 @@ custom protocol selection rather than monkey-patching or switching to the
 deprecated legacy WebSocket implementation.
 
 The overridden handlers and `frames` list are Uvicorn internals, not a stable
-extension API. Production and test requirements constrain Uvicorn to the 0.54
-release line. Before lifting that bound, inspect the SansIO handlers and run
-`pytest -q transcriber/tests` from the repository root. Replace the adapter with
-an upstream fragment-count setting when one becomes available. The wire tests
-read the protocol selection from the Dockerfile so accidentally removing the
-flag fails CI.
+extension API. Production and test requirements pin Uvicorn exactly to 0.54.0.
+Every Uvicorn update, including a patch release, must be an explicit dependency
+change that inspects the SansIO handlers and runs `pytest -q transcriber/tests`
+from the repository root before the pin moves. Replace the adapter with an
+upstream fragment-count setting when one becomes available. The wire tests read
+the protocol selection from the Dockerfile so accidentally removing the flag
+fails CI.
 
 This bounds retained per-message fragments across TCP reads, not all server
 memory or CPU use. Keep TLS, authentication, connection limits, and rate limits
