@@ -155,10 +155,39 @@ upstream fragment-count setting when one becomes available. The wire tests read
 the protocol selection from the Dockerfile so accidentally removing the flag
 fails CI.
 
+The adapter has been validated on Python 3.12 with Uvicorn 0.54.0 and
+websockets 16.0 and 17.4. Upgrading websockets alone does not fix Uvicorn's
+assembly list: the high-level websockets Assembler fragment cap, including
+`WEBSOCKETS_MAX_FRAGMENTS`, does not control this SansIO path.
+
+To reproduce the transport checks locally, install
+`transcriber/requirements-test.txt` in a virtual environment, then run from the
+repository root:
+
+```bash
+python -m pip install websockets==16.0
+python -m pytest -q transcriber/tests
+python -m pip install websockets==17.4
+python -m pytest -q transcriber/tests
+```
+
+`test_websocket_transport.py` starts real loopback Uvicorn servers using the
+Dockerfile's protocol selection. It sends raw masked frames to check the exact
+4,096-frame boundary and rejection at data frame 4,097. The live endpoint test
+also sends a binary opener followed by 4,097 empty continuation frames, with
+both finished and unfinished variants. It checks code 1009, an empty retained
+fragment list, and session cleanup. Same-read parser-error and peer-close tests
+check their qualified close codes and cleanup separately. Normal controls,
+recoverable application errors, stop, and disconnect cancellation use the real
+live handler with synthetic ASR and VAD dependencies. These tests do not validate
+GPU inference or deployed proxies.
+
 This bounds retained per-message fragments across TCP reads, not all server
-memory or CPU use. Keep TLS, authentication, connection limits, and rate limits
-at the deployment boundary. Rolling back to an older image also removes this
-mitigation; restrict WebSocket access during rollback. The pre-existing `stop`
+memory or CPU use. Uvicorn parses each TCP read before dispatching frame events,
+so transient parser-event allocations are not capped by this adapter. Keep TLS,
+authentication, connection limits, and rate limits at the deployment boundary.
+Rolling back to an older image also removes this mitigation; restrict WebSocket
+access during rollback. The pre-existing `stop`
 response still ends without an explicit close frame, observed as code 1006.
 This change does not alter that application behavior.
 
