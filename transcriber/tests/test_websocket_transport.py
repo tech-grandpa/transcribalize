@@ -336,17 +336,21 @@ def test_live_disconnect_cleans_up(live_app, monkeypatch, in_flight):
     asyncio.run(scenario())
 
 
-def test_live_fragment_overflow_cleans_up(live_app):
+@pytest.mark.parametrize("final", [False, True], ids=["unfinished", "finished"])
+def test_live_fragment_overflow_cleans_up(live_app, final):
     app, live = live_app
 
     async def scenario():
         async with running_server(app) as (url, protocols):
             async with connect(url + "/ws/transcribe", compression=None) as client:
                 assert (await receive_json(client))["type"] == "ready"
+                # Send 4,097 empty continuation frames after the binary opener.
+                # Both completed and unfinished messages must close at the bound.
                 send_frames(
                     client,
                     [Frame(Opcode.BINARY, b"", fin=False)]
-                    + [Frame(Opcode.CONT, b"", fin=False) for _ in range(4096)],
+                    + [Frame(Opcode.CONT, b"", fin=False) for _ in range(4096)]
+                    + [Frame(Opcode.CONT, b"", fin=final)],
                 )
                 with pytest.raises(ConnectionClosed) as closed:
                     await asyncio.wait_for(client.recv(), 2)
